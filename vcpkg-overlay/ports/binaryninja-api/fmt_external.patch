@@ -1,0 +1,24 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 99feb0c1..58eb55d2 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -130,8 +130,7 @@ if(NOT BinaryNinjaAPI_HEADLESS)
+     target_include_directories(binaryninjaapi PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/ui>")
+ endif()
+ 
+-add_subdirectory(vendor/fmt)
+-set_target_properties(fmt PROPERTIES POSITION_INDEPENDENT_CODE ON)
++find_package(fmt)
+ target_link_libraries(binaryninjaapi PUBLIC fmt::fmt)
+ 
+ if(BinaryNinjaAPI_RUST_API)
+@@ -195,7 +194,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
+ 
+     # cmake --install build --component BinaryNinjaAPIDistrib
+     install(
+-        TARGETS binaryninjaapi fmt
++        TARGETS binaryninjaapi
+         LIBRARY
+             DESTINATION "api"
+             COMPONENT BinaryNinjaAPIDistrib EXCLUDE_FROM_ALL
+Submodule vendor/fmt contains modified content

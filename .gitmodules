@@ -1,0 +1,4 @@
+[submodule "external/binaryninja-api"]
+	path = external/binaryninja-api
+	url = https://github.com/ekilmer/binaryninja-api
+	branch = cmake-refactor
