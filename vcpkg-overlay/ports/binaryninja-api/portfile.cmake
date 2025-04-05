@@ -2,9 +2,9 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO ekilmer/binaryninja-api
     # cmake-refactor branch
-    REF 0f1a7583fc7c63ee00b3741f4bc6a3bb177aea68
-    SHA512 fa45615892b92eefe2ccc76411fc192ca8f3aae58e6e3ba4bdd4e9e8c6198fd0ecd66c790e62f0012a2fec11eae8b8dffd46ab9944ece242af3ae4cf4594607b
-    HEAD_REF dev
+    REF f9fe4753285ecb6fbab43896d36bffbca30807f7
+    SHA512 8c1cb17b0a06a958dd9fc0ce38a61036f93744e5d85c5bad47aac2909c3ae30e55d032cd8f7d185f497d1b3eb78175885fc8cf7206dac85b1c16f37615cbbd77
+    HEAD_REF cmake-refactor
 )
 
 vcpkg_check_features(
