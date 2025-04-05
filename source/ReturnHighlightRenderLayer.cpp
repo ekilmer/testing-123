@@ -1,4 +1,4 @@
-#include "BinjaReturnHighlighter//ReturnHighlightRenderLayer.hpp"
+#include "BinjaReturnHighlighter/ReturnHighlightRenderLayer.hpp"
 
 #include <algorithm>
 #include <vector>
@@ -9,17 +9,7 @@
 #include <lowlevelilinstruction.h>
 #include <mediumlevelilinstruction.h>
 
-using BinaryNinja::BasicBlock;
-using BinaryNinja::DisassemblyTextLine;
-using BinaryNinja::Function;
-using BinaryNinja::HighLevelILFunction;
-using BinaryNinja::HighLevelILInstruction;
-using BinaryNinja::LinearDisassemblyLine;
-using BinaryNinja::LowLevelILFunction;
-using BinaryNinja::LowLevelILInstruction;
-using BinaryNinja::MediumLevelILFunction;
-using BinaryNinja::MediumLevelILInstruction;
-using BinaryNinja::Ref;
+using namespace BinaryNinja;
 
 namespace {
 	constexpr int AlphaSolid = 255;

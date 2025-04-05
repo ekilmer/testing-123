@@ -47,4 +47,4 @@ The highlighting is implemented by checking keyword tokens for return-like text 
 
 - Allow the user to choose a color for line highlighting
 - Insert fake "return" at end of function for void functions
-  - Sometimes, Binary Ninja will use a do-while loop and the `while` is at the last expression in the function, which isn't highlighted
+  - Sometimes, Binary Ninja will use a do-while loop (in HLIL) and `while(...)` the last expression in the function, which doesn't get highlighted
