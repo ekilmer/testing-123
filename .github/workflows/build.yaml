@@ -30,8 +30,11 @@ jobs:
           name: ubuntu}
         version:
         - name: HEAD  # Current submodule
+          owner: ${{ github.repository_owner }}
         - name: dev   # Current upstream latest commits (on my fork)
+          owner: Vector35
         - name: cmake-refactor # My CMake refactor branch
+          owner: ${{ github.repository_owner }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -53,13 +56,16 @@ jobs:
         clang-tidy --version
 
     - uses: ilammy/msvc-dev-cmd@v1
+
     - name: Update submodule
       run: |
         cd external/binaryninja-api
+        git remote set-url origin https://github.com/${{matrix.version.owner}}/binaryninja-api.git
         git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-        git fetch --tags
+        git fetch --quiet --tags
         git fetch --update-shallow --depth=1 origin ${{matrix.version.name}}
         git checkout --progress --force ${{matrix.version.name}}
+        git show --no-patch HEAD
         git submodule update --init --depth=1 vendor/
 
     - name: Configure CMake
@@ -68,11 +74,26 @@ jobs:
     - name: Build
       run: cmake --build build --config Release -j 4
 
+    # Upstream doesn't let you set arbitrary installation path, so copy manually
+    - name: Copy plugin
+      shell: pwsh
+      run: |
+        mkdir install-plugin
+        Write-Host "Found plugin binaries at the following locations:"
+        $pluginFiles = Get-ChildItem -Path build -Recurse -File | Where-Object { $_.Name -match "ReturnHighlighter.*\.(dylib|so|dll)$" }
+        $pluginFiles | ForEach-Object { Write-Host $_.FullName }
+
+        # Find the largest plugin file and copy only that one (due to macOS single-arch binaries existing separately)
+        $largestPluginFile = $pluginFiles | Sort-Object Length -Descending | Select-Object -First 1
+        Write-Host "Copying largest plugin file: $($largestPluginFile.FullName) (Size: $($largestPluginFile.Length) bytes)"
+        Copy-Item $largestPluginFile.FullName -Destination install-plugin
+        Get-ChildItem -Path install-plugin
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.config.name}}-${{matrix.version.name}}
-        path: build/*ReturnHighlighter*
+        path: install-plugin/
 
   build-vcpkg:
     needs: [lint]
@@ -90,41 +111,46 @@ jobs:
           - {os: ubuntu-24.04,
              name: ubuntu-vcpkg}
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - shell: bash
-        run: echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_ENV"
+    - shell: bash
+      run: echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_ENV"
 
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+    - name: Export GitHub Actions cache environment variables
+      uses: actions/github-script@v7
+      with:
+        script: |
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - uses: ilammy/msvc-dev-cmd@v1
+    - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install static analyzers
-        if: matrix.config.os == 'ubuntu-24.04'
-        run: |
-          sudo wget --output-document=/usr/share/keyrings/apt.llvm.org.asc https://apt.llvm.org/llvm-snapshot.gpg.key
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/apt.llvm.org.asc] http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
-          sudo apt-get --yes update
+    - name: Install static analyzers
+      if: matrix.config.os == 'ubuntu-24.04'
+      run: |
+        sudo wget --output-document=/usr/share/keyrings/apt.llvm.org.asc https://apt.llvm.org/llvm-snapshot.gpg.key
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/apt.llvm.org.asc] http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+        sudo apt-get --yes update
 
-          sudo apt-get install --yes --no-install-recommends cppcheck clang-tidy-20
-          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-20 900
+        sudo apt-get install --yes --no-install-recommends cppcheck clang-tidy-20
+        sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-20 900
 
-          cppcheck --version
-          clang-tidy --version
+        cppcheck --version
+        clang-tidy --version
 
-      - name: Configure CMake
-        run: cmake --log-level=DEBUG --preset ci-${{matrix.config.name}}
+    - name: Configure CMake
+      run: cmake --log-level=DEBUG
+            --preset ci-${{matrix.config.name}}
+            -DBinaryNinjaAPI_USER_PLUGINS_DIR=install-plugin
 
-      - name: Build
-        run: cmake --build build --config Release -j 4
+    - name: Build
+      run: cmake --build build --config Release -j 4
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{matrix.config.name}}-vcpkg
-          path: build/*ReturnHighlighter*
+    - name: Install
+      run: cmake --install build --config Release
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{matrix.config.name}}
+        path: install-plugin/
